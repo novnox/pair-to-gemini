@@ -56,6 +56,10 @@ your login keychain, and later builds keep the grant. You can undo it with
 
 Tested with Gemini Desktop 1.150.x on macOS 27.2.
 
+**Coding agents:** copy `skills/pair-to-gemini/` into your agent's skills
+directory, or read `AGENTS.md` directly. The skill is a short version of that
+manual.
+
 ## Use
 
 Ask a question and print only the answer:

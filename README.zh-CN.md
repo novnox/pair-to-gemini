@@ -51,6 +51,9 @@ scripts/install.sh        # 引导式安装；只要二进制用 scripts/build.s
 
 已在 macOS 27.2 + Gemini 桌面版 1.150.x 上测试。
 
+**给 coding agent：** 把 `skills/pair-to-gemini/` 复制到你的 agent skills
+目录，或直接读 `AGENTS.md`。那份 skill 是这份手册的简版。
+
 ## 使用
 
 提一个问题，只输出答案：
