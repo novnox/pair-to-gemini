@@ -1,3 +1,3 @@
-module pair-to-gemini
+module github.com/novnox/pair-to-gemini
 
 go 1.22
