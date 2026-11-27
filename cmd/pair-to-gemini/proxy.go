@@ -48,8 +48,8 @@ func cmdServe(root string, args []string) int {
 	fs := flag.NewFlagSet("serve", flag.ContinueOnError)
 	fs.SetOutput(os.Stderr)
 	socket := fs.String("socket", defaultSocketPath(root), "Unix socket path")
-	if err := fs.Parse(args); err != nil {
-		return 2
+	if stop, code := parseFlags(fs, args); stop {
+		return code
 	}
 	if err := serveSocket(root, *socket); err != nil {
 		fmt.Fprintf(os.Stderr, "pair-to-gemini serve: %v\n", err)
@@ -168,8 +168,8 @@ func cmdClient(root string, args []string) int {
 	fs.Usage = func() {
 		fmt.Fprintln(os.Stderr, "Usage: pair-to-gemini client [--socket <path>] [--timeout <sec>] -- <command> [args...]")
 	}
-	if err := fs.Parse(args); err != nil {
-		return 2
+	if stop, code := parseFlags(fs, args); stop {
+		return code
 	}
 	target := fs.Args()
 	if len(target) == 0 {

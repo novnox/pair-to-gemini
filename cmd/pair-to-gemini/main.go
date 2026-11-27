@@ -186,6 +186,31 @@ func failErr(code string, exit int) int {
 	return exit
 }
 
+// parseFlags reports whether the caller should return. Asking for help is a
+// successful invocation: the flag package prints the usage and returns
+// flag.ErrHelp, which is not bad input.
+func parseFlags(fs *flag.FlagSet, args []string) (stop bool, code int) {
+	err := fs.Parse(args)
+	if err == nil {
+		return false, 0
+	}
+	if errors.Is(err, flag.ErrHelp) {
+		return true, 0
+	}
+	return true, failErr("invalid_args", 2)
+}
+
+// parseFlagsArgs is parseFlags for subcommands that need a positional argument.
+func parseFlagsArgs(fs *flag.FlagSet, args []string, need int) (stop bool, code int) {
+	if stop, code := parseFlags(fs, args); stop {
+		return stop, code
+	}
+	if fs.NArg() < need {
+		return true, failErr("invalid_args", 2)
+	}
+	return false, 0
+}
+
 func waitTaskCompletion(root string, tr TaskRecord, timeoutSec float64, returnOnAttention bool) (int, map[string]any) {
 	if timeoutSec < 1 {
 		timeoutSec = 1
@@ -420,6 +445,10 @@ func cmdPair(root string, args []string) int {
 	if len(args) == 0 {
 		return failErr("missing_pair_subcommand", 2)
 	}
+	if a := args[0]; a == "-h" || a == "--help" || a == "help" {
+		usage()
+		return 0
+	}
 	if err := ensureDirs(root); err != nil {
 		return failErr("io_error", 2)
 	}
@@ -449,8 +478,8 @@ func cmdPair(root string, args []string) int {
 		id := fs.String("id", "", "pair id")
 		title := fs.String("gemini-title", "", "Gemini conversation title")
 		label := fs.String("label", "", "human label")
-		if err := fs.Parse(args[1:]); err != nil {
-			return failErr("invalid_args", 2)
+		if stop, code := parseFlags(fs, args[1:]); stop {
+			return code
 		}
 		if !pairIDRe.MatchString(*id) || strings.TrimSpace(*title) == "" {
 			return failErr("invalid_pair_id_or_title", 2)
@@ -470,8 +499,8 @@ func cmdPair(root string, args []string) int {
 		ws := fs.String("workspace", "", "optional bookmarked workspace path")
 		initPrompt := fs.String("init-prompt", "", "custom init prompt")
 		waitSec := fs.Float64("wait-sec", 40, "seconds to wait")
-		if err := fs.Parse(args[1:]); err != nil {
-			return failErr("invalid_args", 2)
+		if stop, code := parseFlags(fs, args[1:]); stop {
+			return code
 		}
 		if !pairIDRe.MatchString(*id) || strings.TrimSpace(*title) == "" {
 			return failErr("invalid_pair_id_or_title", 2)
@@ -522,8 +551,8 @@ func cmdPair(root string, args []string) int {
 
 	case "remove":
 		fs := flag.NewFlagSet("pair remove", flag.ContinueOnError)
-		if err := fs.Parse(args[1:]); err != nil || fs.NArg() < 1 {
-			return failErr("invalid_args", 2)
+		if stop, code := parseFlagsArgs(fs, args[1:], 1); stop {
+			return code
 		}
 		targetID := fs.Arg(0)
 		err := withFlock(lockP, func() error {
@@ -608,8 +637,8 @@ func cmdSend(root string, args []string) int {
 	// Optional: keep the legacy framed prompt with sentinel tags for stricter
 	// reply extraction. Plain prompts are the default so the chat looks natural.
 	framed := fs.Bool("framed", false, "wrap the prompt with paired sentinel tags")
-	if err := fs.Parse(args); err != nil {
-		return failErr("invalid_args", 2)
+	if stop, code := parseFlags(fs, args); stop {
+		return code
 	}
 
 	var body string
@@ -824,12 +853,16 @@ func cmdTask(root string, args []string) int {
 	if len(args) == 0 {
 		return failErr("missing_task_subcommand", 2)
 	}
+	if a := args[0]; a == "-h" || a == "--help" || a == "help" {
+		usage()
+		return 0
+	}
 	sub := args[0]
 	switch sub {
 	case "status":
 		fs := flag.NewFlagSet("task status", flag.ContinueOnError)
-		if err := fs.Parse(args[1:]); err != nil || fs.NArg() < 1 {
-			return failErr("invalid_args", 2)
+		if stop, code := parseFlagsArgs(fs, args[1:], 1); stop {
+			return code
 		}
 		tr, err := loadTask(root, fs.Arg(0))
 		if err != nil {
@@ -840,8 +873,8 @@ func cmdTask(root string, args []string) int {
 
 	case "read":
 		fs := flag.NewFlagSet("task read", flag.ContinueOnError)
-		if err := fs.Parse(args[1:]); err != nil || fs.NArg() < 1 {
-			return failErr("invalid_args", 2)
+		if stop, code := parseFlagsArgs(fs, args[1:], 1); stop {
+			return code
 		}
 		tr, err := loadTask(root, fs.Arg(0))
 		if err != nil {
@@ -886,7 +919,10 @@ func cmdTask(root string, args []string) int {
 		fs := flag.NewFlagSet("task wait", flag.ContinueOnError)
 		timeout := fs.Float64("timeout", 300, "wait timeout seconds")
 		retAtt := fs.Bool("return-on-attention", true, "return exit 3 on confirmation card")
-		if err := fs.Parse(flagArgs); err != nil || taskID == "" {
+		if stop, code := parseFlags(fs, flagArgs); stop {
+			return code
+		}
+		if taskID == "" {
 			return failErr("invalid_args", 2)
 		}
 		tr, err := loadTask(root, taskID)
