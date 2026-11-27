@@ -123,7 +123,11 @@ pair-to-gemini task read <taskId>     # reprint an archived reply
 pair-to-gemini task status <taskId>   # raw task record
 pair-to-gemini pair list
 pair-to-gemini chats                  # titles in Gemini's sidebar
+pair-to-gemini agent status           # LaunchAgent plist, load state, socket
 ```
+
+`agent install` belongs to the Mac: it installs the SSH proxy. `agent uninstall`
+removes the LaunchAgent and keeps the archived replies.
 
 Replies are archived on the Mac, so a reply survives a dropped SSH session;
 read it with `task read`.
@@ -148,6 +152,6 @@ read it with `task read`.
 - `P2G_DEBUG_CHUNKS=1` dumps the accessibility chunks read while waiting.
 - The proxy stays a Unix socket (`0600`, in a `0700` directory). Do not add
   network listeners.
-- Signing is opt-in (`scripts/setup-signing.sh`); `build.sh` signs only when
-  it is enabled.
+- Signing is opt-in (`scripts/build.sh --enable-signing`); the build signs only
+  when it is enabled.
 - Do not commit, push, tag, or publish without explicit human approval.

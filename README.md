@@ -35,7 +35,7 @@ with the Xcode Command Line Tools.
 ```bash
 git clone <this repo> pair-to-gemini
 cd pair-to-gemini
-scripts/install.sh        # guided; or scripts/build.sh for the binary only
+scripts/build.sh          # build and install ~/.local/bin/pair-to-gemini
 ```
 
 This installs `~/.local/bin/pair-to-gemini` and creates the data directory
@@ -50,9 +50,9 @@ Then grant Accessibility:
 
 **Rebuilding resets the grant.** macOS ties the grant to the binary's
 signature, and every unsigned build has a new one. If you rebuild often, run
-`scripts/setup-signing.sh` once. It creates a local signing certificate in
-your login keychain, and later builds keep the grant. You can undo it with
-`scripts/setup-signing.sh --disable`.
+`scripts/build.sh --enable-signing` once. It creates a local signing
+certificate in your login keychain, and later builds keep the grant. You can
+undo it with `scripts/build.sh --disable-signing`.
 
 Tested with Gemini Desktop 1.150.x on macOS 27.2.
 
@@ -147,8 +147,9 @@ socket. Nothing listens on the network.
 On the Mac:
 
 ```bash
-scripts/install-agent.sh
+pair-to-gemini agent install
 pair-to-gemini client -- doctor --json     # should report "ok": true
+pair-to-gemini agent status                # plist, load state, socket
 ```
 
 On the other machine, copy `scripts/p2g-remote` into your `PATH` and add an SSH
@@ -181,7 +182,7 @@ Mac as you can use it, so limit SSH access accordingly.
 | You see | Do this |
 |---|---|
 | `ax_not_trusted` | Grant Accessibility to the binary (and your terminal) |
-| `axTrusted: false` from the proxy | Re-add the binary, then `launchctl kickstart -k gui/$(id -u)/com.pairtogemini.proxy` |
+| `axTrusted: false` from the proxy | Re-add the binary in Accessibility, then `pair-to-gemini agent install` to restart it |
 | `gemini_not_running` | Open Gemini.app |
 | `screen_locked` | Unlock the Mac |
 | `concurrency_limit` | Two tasks are already generating; retry later |
@@ -191,13 +192,13 @@ Mac as you can use it, so limit SSH access accordingly.
 | `"submitUnconfirmed": true` | The send could not be confirmed. Check Gemini before resending; `task wait` if the prompt is there |
 | Reply includes the prompt or old text | Try `--framed`; set `P2G_DEBUG_CHUNKS=1` to see what was read |
 | `bind: invalid argument` | Socket path too long (macOS limit is about 104 bytes); use a shorter `--socket` |
-| `client: connect: no such file or directory` | The proxy is not running: `launchctl print gui/$UID/com.pairtogemini.proxy` |
+| `client: connect: no such file or directory` | The proxy is not running: `pair-to-gemini agent status` |
 
 ## Uninstall
 
 ```bash
-launchctl bootout gui/$(id -u)/com.pairtogemini.proxy
-rm -f ~/Library/LaunchAgents/com.pairtogemini.proxy.plist ~/.local/bin/pair-to-gemini
+pair-to-gemini agent uninstall
+rm -f ~/.local/bin/pair-to-gemini
 rm -rf ~/.local/share/pair-to-gemini
 ```
 

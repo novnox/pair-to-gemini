@@ -31,7 +31,7 @@ Xcode Command Line Tools。
 ```bash
 git clone <本仓库> pair-to-gemini
 cd pair-to-gemini
-scripts/install.sh        # 引导式安装；只要二进制用 scripts/build.sh
+scripts/build.sh          # 编译并安装到 ~/.local/bin/pair-to-gemini
 ```
 
 安装后得到 `~/.local/bin/pair-to-gemini`，并创建数据目录
@@ -45,9 +45,9 @@ scripts/install.sh        # 引导式安装；只要二进制用 scripts/build.s
 3. 运行 `pair-to-gemini doctor` 检查，应显示 `axTrusted=true`。
 
 **重新编译会让授权失效。** macOS 按二进制签名记录授权，而每次未签名编译出的
-签名都不同。如果经常重新编译，运行一次 `scripts/setup-signing.sh`。它会在登录
-钥匙串里创建一个本地签名证书，之后的编译都能保留授权。撤销方法是运行
-`scripts/setup-signing.sh --disable`。
+签名都不同。如果经常重新编译，运行一次 `scripts/build.sh --enable-signing`。它会
+在登录钥匙串里创建一个本地签名证书，之后的编译都能保留授权。撤销方法是运行
+`scripts/build.sh --disable-signing`。
 
 已在 macOS 27.2 + Gemini 桌面版 1.150.x 上测试。
 
@@ -133,8 +133,9 @@ SSH 会话不能使用辅助功能 API，所以由一个 LaunchAgent 在你的�
 在 Mac 上：
 
 ```bash
-scripts/install-agent.sh
+pair-to-gemini agent install
 pair-to-gemini client -- doctor --json     # 应返回 "ok": true
+pair-to-gemini agent status                # plist、加载状态、socket
 ```
 
 在另一台机器上，把 `scripts/p2g-remote` 复制到 `PATH`，并给 Mac 配一个 SSH 别名：
@@ -164,7 +165,7 @@ socket 位于 `~/.local/share/pair-to-gemini/proxy.sock`，权限 `0600`，代�
 | 现象 | 处理 |
 |---|---|
 | `ax_not_trusted` | 给二进制（以及你用的终端）授予辅助功能权限 |
-| 代理报 `axTrusted: false` | 重新添加二进制，然后运行 `launchctl kickstart -k gui/$(id -u)/com.pairtogemini.proxy` |
+| 代理报 `axTrusted: false` | 在辅助功能里重新添加二进制，再运行 `pair-to-gemini agent install` 重启它 |
 | `gemini_not_running` | 打开 Gemini.app |
 | `screen_locked` | 解锁 Mac |
 | `concurrency_limit` | 已有两个任务在生成，稍后重试 |
@@ -174,13 +175,13 @@ socket 位于 `~/.local/share/pair-to-gemini/proxy.sock`，权限 `0600`，代�
 | `"submitUnconfirmed": true` | 无法确认是否发出。重发前先看 Gemini；如果消息已在会话里，就 `task wait` |
 | 回复里带了提示词或旧内容 | 试试 `--framed`；设 `P2G_DEBUG_CHUNKS=1` 查看实际读到的内容 |
 | `bind: invalid argument` | socket 路径太长（macOS 上限约 104 字节），用更短的 `--socket` |
-| `client: connect: no such file or directory` | 代理没在运行：`launchctl print gui/$UID/com.pairtogemini.proxy` |
+| `client: connect: no such file or directory` | 代理没在运行：`pair-to-gemini agent status` |
 
 ## 卸载
 
 ```bash
-launchctl bootout gui/$(id -u)/com.pairtogemini.proxy
-rm -f ~/Library/LaunchAgents/com.pairtogemini.proxy.plist ~/.local/bin/pair-to-gemini
+pair-to-gemini agent uninstall
+rm -f ~/.local/bin/pair-to-gemini
 rm -rf ~/.local/share/pair-to-gemini
 ```
 
