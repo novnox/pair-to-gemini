@@ -17,7 +17,7 @@ import (
 	"time"
 )
 
-const Version = "0.2.1"
+const Version = "0.3.0"
 
 type Pair struct {
 	PairID      string `json:"pairId"`
@@ -970,7 +970,10 @@ Commands:
   task read <taskId>
   serve [--socket <path>]           Run the local proxy daemon (macOS GUI session)
   client [--socket <path>] -- <command> [args...]
-                                    Forward one command to a running serve`)
+                                    Forward one command to a running serve
+  agent install [--bin <path>]      Install the proxy as a LaunchAgent
+  agent status                      Show the agent's plist, load state, and socket
+  agent uninstall                   Remove the LaunchAgent (keeps the data directory)`)
 }
 
 func main() {
@@ -1003,6 +1006,8 @@ func main() {
 		os.Exit(cmdSend(root, rest))
 	case "task":
 		os.Exit(cmdTask(root, rest))
+	case "agent":
+		os.Exit(cmdAgent(root, rest))
 	case "serve":
 		os.Exit(cmdServe(root, rest))
 	case "client":
