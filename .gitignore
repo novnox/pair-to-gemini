@@ -1,0 +1,6 @@
+.DS_Store
+*.sock
+*.log
+/bin/
+/dist/
+/pair-to-gemini

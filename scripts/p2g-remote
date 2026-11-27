@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# Forward pair-to-gemini commands from another machine to the Mac that runs
+# the proxy daemon. Requires SSH access to that Mac.
+#
+#   export P2G_SSH_HOST=mac          # SSH host alias from ~/.ssh/config
+#   p2g-remote doctor --json
+#   p2g-remote send --pair default --stdin < prompt.md
+set -euo pipefail
+
+: "${P2G_SSH_HOST:?set P2G_SSH_HOST to the SSH host alias of the Mac running pair-to-gemini}"
+REMOTE_SOCKET="${P2G_REMOTE_SOCKET:-}"
+
+if [ "$#" -eq 0 ]; then
+  echo "usage: p2g-remote <command> [args...]" >&2
+  echo "example: p2g-remote send --pair default --stdin" >&2
+  exit 2
+fi
+
+if [ -n "${P2G_REMOTE_BIN:-}" ]; then
+  remote="$(printf '%q' "$P2G_REMOTE_BIN") client"
+else
+  # Expanded by the remote shell, not this one.
+  remote='$HOME/.local/bin/pair-to-gemini client'
+fi
+if [ -n "$REMOTE_SOCKET" ]; then
+  remote+=" --socket $(printf '%q' "$REMOTE_SOCKET")"
+fi
+remote+=" --"
+for arg in "$@"; do
+  remote+=" $(printf '%q' "$arg")"
+done
+
+exec ssh -T "$P2G_SSH_HOST" "$remote"
